@@ -1,12 +1,12 @@
 ﻿namespace codecrafters_http_server;
 
-public class HttpRequestParser
+public class HttpRequest
 {
     public string Method { get; private set; }
     public string Path { get; private set; }
     public string Version { get; private set; }
 
-    public HttpRequestParser(string requestText)
+    public HttpRequest(string requestText)
     {
         string requestLine = requestText.Split("\r\n")[0];
 

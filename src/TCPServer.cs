@@ -7,59 +7,44 @@ namespace codecrafters_http_server
     public class TCPServer
     {
         private TcpListener _tcpListener;
-
-        public void Start()
+        private Router _router;
+        public TCPServer(Router router)
         {
-            var port = 4221;
-            var hostAddress = IPAddress.Loopback;
-            _tcpListener = new TcpListener(hostAddress, port);
+            _router = router;
+        }
+
+        public void Start(int? port = 4221)
+        {
+            if (port == null)
+            {
+                Console.WriteLine("Port is null");
+                throw new Exception("Port is null");
+            }
+            
+            _tcpListener = new TcpListener(IPAddress.Loopback, port.Value);
             _tcpListener.Start();
-            Console.WriteLine("Server is running at http://localhost:4221/");
+            Console.WriteLine($"Server is running at http://localhost:{port}/");
 
             while (true)
             {
                 TcpClient client = _tcpListener.AcceptTcpClient();
-                Console.WriteLine("Client connected!");
-
-                NetworkStream stream = client.GetStream();
-
-                byte[] buffer = new byte[4096];
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                string requestText = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                Console.WriteLine("Request received:");
-                Console.WriteLine(requestText);
-
-                string requestLine = requestText.Split("\r\n")[0];
-
-                var parser = new HttpRequestParser(requestText);
-
-                string statusLine;
-                string body;
-
-                if (parser.Path == "/")
-                {
-                    statusLine = "HTTP/1.1 200 OK\r\n";
-                    body = "<h1>Hello from TcpListener!</h1>";
-                }
-                else
-                {
-                    statusLine = "HTTP/1.1 404 Not Found\r\n";
-                    body = "<h1>Not Found</h1>";
-                }
-
-                string response =
-                    statusLine +
-                    "Content-Type: text/html; charset=UTF-8\r\n" +
-                    $"Content-Length: {Encoding.UTF8.GetByteCount(body)}\r\n" +
-                    "Connection: close\r\n" +
-                    "\r\n" +
-                    body;
-
-                byte[] responseBytes = Encoding.UTF8.GetBytes(response);
-                stream.Write(responseBytes, 0, responseBytes.Length);
-
-                client.Close();
+                Task.Run(() => HandleClient(client));
             }
         }
+
+        private void HandleClient(TcpClient client)
+        {
+            using var stream = client.GetStream();
+            byte[] buffer = new byte[4096];
+            int bytesRead = stream.Read(buffer, 0, buffer.Length);
+            string requestText = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+
+            var request = new HttpRequest(requestText);
+            var response = _router.Route(request);
+
+            stream.Write(response.ToBytes(), 0, response.ToBytes().Length);
+            client.Close();
+        }
     }
+
 }

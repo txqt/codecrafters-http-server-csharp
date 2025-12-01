@@ -8,7 +8,8 @@ Console.WriteLine("Logs from your program will appear here!");
 
 var router = new Router();
 router.AddRoute("/", req => new HttpResponse { Body = "<h1>Hello</h1>" });
-router.AddRoute("/echo/", req => new HttpResponse { Body = req.Path.Split('/')[2] });
+router.AddRoute("/echo/", req => new HttpResponse { ContentType = "text/plain", Body = req.Path.Split('/')[2] });
+router.AddRoute("/user-agent", req => new HttpResponse { ContentType = "text/plain", Body = req.UserAgent });
 
 var server = new TCPServer(router);
 server.Start();

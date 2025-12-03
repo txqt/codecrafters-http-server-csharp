@@ -37,9 +37,8 @@ namespace codecrafters_http_server
             using var stream = client.GetStream();
             byte[] buffer = new byte[4096];
             int bytesRead = stream.Read(buffer, 0, buffer.Length);
-            string requestText = Encoding.UTF8.GetString(buffer, 0, bytesRead);
 
-            var request = new HttpRequest(requestText);
+            var request = new HttpRequest(buffer, bytesRead);
             var response = _router.Route(request);
 
             stream.Write(response.ToBytes(), 0, response.ToBytes().Length);

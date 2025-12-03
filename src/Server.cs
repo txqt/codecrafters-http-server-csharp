@@ -37,17 +37,46 @@ router.AddRoute("/files/", req =>
     var filename = segments[2];
     var fullPath = Path.Combine(filesDirectory, filename);
 
-    if (!File.Exists(fullPath))
+    // Handle GET request - read file
+    if (req.Method == "GET")
     {
-        return new HttpResponse { StatusCode = "404 Not Found" };
+        if (!File.Exists(fullPath))
+        {
+            return new HttpResponse { StatusCode = "404 Not Found" };
+        }
+        
+        var contents = File.ReadAllBytes(fullPath);
+        return new HttpResponse 
+        { 
+            ContentType = "application/octet-stream", 
+            BodyBytes = contents 
+        };
     }
     
-    var contents = File.ReadAllBytes(fullPath);
-    return new HttpResponse 
-    { 
-        ContentType = "application/octet-stream", 
-        BodyBytes = contents 
-    };
+    // Handle POST request - create file
+    if (req.Method == "POST")
+    {
+        try
+        {
+            File.WriteAllBytes(fullPath, req.BodyBytes);
+            return new HttpResponse 
+            { 
+                StatusCode = "201 Created"
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error writing file: {ex.Message}");
+            return new HttpResponse 
+            { 
+                StatusCode = "500 Internal Server Error", 
+                Body = "Failed to create file" 
+            };
+        }
+    }
+    
+    // Method not allowed
+    return new HttpResponse { StatusCode = "405 Method Not Allowed" };
 });
 
 var server = new TCPServer(router);
